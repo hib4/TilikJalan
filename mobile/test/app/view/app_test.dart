@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tilikjalan/app/app.dart';
-import 'package:tilikjalan/counter/counter.dart';
+import 'package:tilikjalan/features/test/test.dart';
 
 void main() {
   group('App', () {
-    testWidgets('renders CounterPage', (tester) async {
+    testWidgets('renders TestPage', (tester) async {
       await tester.pumpWidget(const App());
-      expect(find.byType(CounterPage), findsOneWidget);
+      expect(find.byType(TestPage), findsOneWidget);
     });
   });
 }
