@@ -352,7 +352,7 @@ class AppThemeData {
       cupertinoOverrideTheme: const CupertinoThemeData(
         brightness: Brightness.light,
       ),
-      scaffoldBackgroundColor: appColors.neutral[500],
+      scaffoldBackgroundColor: Colors.white,
       tabBarTheme: const TabBarThemeData(
         indicatorColor: Colors.black,
       ),
@@ -385,9 +385,9 @@ class AppThemeData {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(8),
           ),
-          textStyle: GoogleFonts.lexend(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),

@@ -1,0 +1,120 @@
+import 'package:flutter/material.dart';
+import 'package:page_transition/page_transition.dart';
+
+/// This extension adds two getters to the `double` class to easily create `SizedBox`
+/// widgets with either a vertical or horizontal dimension equal to the value of the `double`.
+extension XDouble on num {
+  /// Returns a `SizedBox` widget with a height equal to the value of the `double`.
+  Widget get vertical {
+    return SizedBox(height: toDouble());
+  }
+
+  /// Returns a `SizedBox` widget with a width equal to the value of the `double`.
+  Widget get horizontal {
+    return SizedBox(width: toDouble());
+  }
+}
+
+/// An extension on [BuildContext] that adds a method to show a [SnackBar] widget.
+// extension BuildContextSnackBarExtension on BuildContext {
+//   /// Shows a [SnackBar] widget with the given [message] and [duration].
+//   ///
+//   /// The default value for [duration] is 2 seconds.
+//   void showSnackBar({
+//     required String message,
+//     Duration duration = const Duration(seconds: 2),
+//   }) {
+//     ScaffoldMessenger.of(this).showSnackBar(
+//       SnackBar(
+//         content: Text(
+//           message,
+//           style: textTheme.titleSmall,
+//         ),
+//         backgroundColor: colors.secondary,
+//         duration: duration,
+//       ),
+//     );
+//   }
+// }
+
+extension ContextExtension on BuildContext {
+  void unFocusKeyboard() {
+    FocusScope.of(this).unfocus();
+  }
+}
+
+extension FunctionExtension<T> on T {
+  Function get function => () {};
+}
+
+extension NavigatorContextExtension on BuildContext {
+  /// Pushes a new page onto the navigator stack using PageTransition.
+  Future<T?> push<T>(
+    Widget page, {
+    bool rootNavigator = false,
+  }) {
+    return Navigator.of(
+      this,
+      rootNavigator: rootNavigator,
+    ).push<T>(
+      PageTransition(
+        child: page,
+        type: PageTransitionType.fade,
+        duration: const Duration(milliseconds: 300),
+      ),
+    );
+  }
+
+  /// Replaces the current page with a new one using PageTransition.
+  Future<T?> pushReplacement<T, TO>(
+    Widget page, {
+    TO? result,
+    bool rootNavigator = false,
+  }) {
+    return Navigator.of(
+      this,
+      rootNavigator: rootNavigator,
+    ).pushReplacement<T, TO>(
+      PageTransition(
+        child: page,
+        type: PageTransitionType.fade,
+        duration: const Duration(milliseconds: 300),
+      ),
+      result: result,
+    );
+  }
+
+  /// Pushes a new page and removes all previous pages until predicate returns true, using PageTransition.
+  Future<T?> pushAndRemoveUntil<T>(
+    Widget page,
+    bool Function(Route<dynamic>) predicate, {
+    bool rootNavigator = false,
+  }) {
+    return Navigator.of(
+      this,
+      rootNavigator: rootNavigator,
+    ).pushAndRemoveUntil<T>(
+      PageTransition(
+        child: page,
+        type: PageTransitionType.fade,
+        duration: const Duration(milliseconds: 300),
+      ),
+      predicate,
+    );
+  }
+
+  /// Pops the current page off the navigator stack.
+  void pop<T extends Object?>([T? result]) {
+    Navigator.of(this).pop<T>(result);
+  }
+
+  /// Attempts to pop the current page, if possible.
+  Future<bool> maybePop<T extends Object?>([T? result]) {
+    return Navigator.of(this).maybePop<T>(result);
+  }
+
+  /// Pops pages until the predicate returns true.
+  void popUntil(bool Function(Route<dynamic>) predicate) {
+    Navigator.of(this).popUntil(predicate);
+  }
+}
