@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tilikjalan/core/core.dart';
+import 'package:tilikjalan/features/auth/auth.dart';
 import 'package:tilikjalan/features/dashboard/dashboard.dart';
 import 'package:tilikjalan/l10n/l10n.dart';
 
@@ -18,7 +19,7 @@ class App extends StatelessWidget {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         debugShowCheckedModeBanner: false,
-        home: const DashboardPage(),
+        home: const LoginPage(),
       ),
     );
   }
