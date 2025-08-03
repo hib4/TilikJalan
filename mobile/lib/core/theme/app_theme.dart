@@ -393,6 +393,7 @@ class AppThemeData {
           ),
         ),
       ),
+      primaryTextTheme: GoogleFonts.interTextTheme(),
       textTheme: TextTheme(
         displayLarge: appTextStyles.displayLarge,
         displayMedium: appTextStyles.displayMedium,

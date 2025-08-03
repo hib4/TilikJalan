@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tilikjalan/core/core.dart';
 import 'package:tilikjalan/features/auth/auth.dart';
-import 'package:tilikjalan/features/dashboard/dashboard.dart';
 import 'package:tilikjalan/l10n/l10n.dart';
 
 class App extends StatelessWidget {
@@ -16,10 +16,14 @@ class App extends StatelessWidget {
         title: 'TilikJalan',
         theme: AppThemeData.themeData().themeData,
         darkTheme: AppThemeData.themeData().themeData,
+        themeMode: ThemeMode.light,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         debugShowCheckedModeBanner: false,
-        home: const LoginPage(),
+        home: const AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.dark,
+          child: LoginPage(),
+        ),
       ),
     );
   }

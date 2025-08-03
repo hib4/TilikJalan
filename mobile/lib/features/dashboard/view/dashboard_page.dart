@@ -17,6 +17,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
+  late PageController _pageController;
 
   final List<Widget> _pages = const [
     MapPage(),
@@ -26,12 +27,25 @@ class _DashboardPageState extends State<DashboardPage> {
     ProfilePage(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   void _onItemTapped(int index) {
     if (index == 2) {
       context.push(const SensingPage());
       return;
     }
     setState(() => _selectedIndex = index);
+    _pageController.jumpToPage(index);
   }
 
   @override
@@ -65,7 +79,11 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(), // Disable swipe
+        children: _pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
