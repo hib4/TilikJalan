@@ -110,9 +110,9 @@ class _ReportPageState extends State<ReportPage>
             .replaceAll(RegExp(r'^,\s*'), '')
             .replaceAll(RegExp(r',\s*$'), '');
       }
-      return 'Address not found';
+      return 'Alamat tidak ditemukan';
     } catch (e) {
-      return 'Error getting address: $e';
+      return 'Kesalahan mendapatkan alamat: $e';
     }
   }
 
@@ -133,7 +133,7 @@ class _ReportPageState extends State<ReportPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking image: $e'),
+            content: Text('Kesalahan memilih foto: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -158,7 +158,7 @@ class _ReportPageState extends State<ReportPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error capturing image: $e'),
+            content: Text('Kesalahan mengambil foto: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -647,9 +647,7 @@ class _LocationSectionState extends State<_LocationSection> {
               borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
-              ),
+              borderRadius: const BorderRadius.vertical(),
               child: widget.selectedLocation != null
                   ? FlutterMap(
                       mapController: _mapController,
@@ -674,9 +672,8 @@ class _LocationSectionState extends State<_LocationSection> {
                           markers: [
                             Marker(
                               point: widget.selectedLocation!,
-                              child: Icon(
+                              child: const Icon(
                                 Icons.location_pin,
-                                color: colors.primary[500],
                                 size: 40,
                               ),
                             ),
@@ -796,7 +793,7 @@ class _LocationSectionState extends State<_LocationSection> {
                         style: IconButton.styleFrom(
                           foregroundColor: colors.primary[500],
                         ),
-                        tooltip: 'Refresh lokasi saat ini',
+                        tooltip: 'Segarkan lokasi saat ini',
                       ),
                     ],
                   ],
@@ -862,7 +859,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
       }
     } catch (e) {
       setState(() {
-        _selectedAddress = 'Error getting address';
+        _selectedAddress = 'Kesalahan mendapatkan alamat: $e';
         _isLoadingAddress = false;
       });
     }
@@ -890,7 +887,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                 ? () {
                     widget.onLocationSelected(
                       _selectedLocation!,
-                      _selectedAddress ?? 'Address not found',
+                      _selectedAddress ?? 'Alamat tidak ditemukan',
                     );
                     Navigator.pop(context);
                   }

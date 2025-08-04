@@ -46,7 +46,7 @@ class _MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         serviceEnabled = await _location.requestService();
         if (!serviceEnabled) {
           setState(() {
-            _errorMessage = 'Location service is disabled';
+            _errorMessage = 'Layanan lokasi tidak tersedia';
             _isLoading = false;
           });
           return;
@@ -59,7 +59,7 @@ class _MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         permissionGranted = await _location.requestPermission();
         if (permissionGranted != loc.PermissionStatus.granted) {
           setState(() {
-            _errorMessage = 'Location permission denied';
+            _errorMessage = 'Izin lokasi ditolak';
             _isLoading = false;
           });
           return;
@@ -91,7 +91,7 @@ class _MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error getting location: $e';
+        _errorMessage = 'Kesalahan mendapatkan lokasi: $e';
         _isLoading = false;
       });
     }
@@ -113,9 +113,9 @@ class _MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
             .replaceAll(RegExp(r'^,\s*'), '')
             .replaceAll(RegExp(r',\s*$'), '');
       }
-      return 'Address not found';
+      return 'Alamat tidak ditemukan';
     } catch (e) {
-      return 'Error getting address: $e';
+      return 'Kesalahan mendapatkan alamat: $e';
     }
   }
 
@@ -198,7 +198,7 @@ class _MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                             ),
                           ),
                           SizedBox(width: 8),
-                          Text('Getting location...'),
+                          Text('Mendapatkan lokasi...'),
                         ],
                       )
                     else if (_errorMessage != null)
@@ -211,7 +211,6 @@ class _MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (_currentAddress != null) ...[
-                          
                             Text(
                               _currentAddress!,
                               style: const TextStyle(fontSize: 13),
@@ -222,7 +221,7 @@ class _MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                         ],
                       )
                     else
-                      const Text('No location data available'),
+                      const Text('Data lokasi tidak tersedia'),
                   ],
                 ),
               ),

@@ -74,10 +74,10 @@ class RoadRoughnessService {
       _startPeriodicAnalysis();
 
       // Confirm successful start
-      print('RoadRoughnessService: Monitoring started successfully');
+      print('RoadRoughnessService: Pemantauan dimulai dengan sukses');
     } catch (e) {
-      print('RoadRoughnessService: Failed to start monitoring: $e');
-      onError?.call('Failed to start monitoring: $e');
+      print('RoadRoughnessService: Gagal memulai pemantauan: $e');
+      onError?.call('Gagal memulai pemantauan: $e');
       rethrow;
     }
   }
@@ -100,7 +100,7 @@ class RoadRoughnessService {
     if (!serviceEnabled) {
       serviceEnabled = await _location.requestService();
       if (!serviceEnabled) {
-        throw Exception('Location services are disabled');
+        throw Exception('Layanan lokasi tidak tersedia');
       }
     }
 
@@ -109,7 +109,7 @@ class RoadRoughnessService {
     if (permissionGranted == loc.PermissionStatus.denied) {
       permissionGranted = await _location.requestPermission();
       if (permissionGranted != loc.PermissionStatus.granted) {
-        throw Exception('Location permission denied');
+        throw Exception('Izin lokasi ditolak');
       }
     }
   }
@@ -139,7 +139,7 @@ class RoadRoughnessService {
         }
       },
       onError: (Object error) {
-        onError?.call('Accelerometer error: $error');
+        onError?.call('Kesalahan akselerometer: $error');
       },
     );
   }
@@ -178,7 +178,7 @@ class RoadRoughnessService {
             }
           },
           onError: (Object error) {
-            onError?.call('GPS error: $error');
+            onError?.call('Kesalahan GPS: $error');
           },
         );
   }
@@ -199,10 +199,10 @@ class RoadRoughnessService {
       return;
     }
 
-    // Check if vehicle is moving at reasonable speed
+    // Periksa apakah kendaraan bergerak dengan kecepatan yang wajar
     final currentSpeed = _speedReadings.isNotEmpty ? _speedReadings.last : 0.0;
     if (currentSpeed < _speedThreshold) {
-      // Vehicle is stationary or moving too slowly for accurate readings
+      // Kendaraan diam atau bergerak terlalu lambat untuk pembacaan yang akurat
       return;
     }
 
@@ -347,12 +347,12 @@ class RoadRoughnessService {
     final averageSpeed =
         _speedReadings.reduce((a, b) => a + b) / _speedReadings.length;
 
-    // Adjust roughness based on speed (higher speeds amplify road roughness perception)
-    if (averageSpeed < 20) return 0.8; // Low speed, reduce sensitivity
-    if (averageSpeed < 40) return 1; // Normal speed
-    if (averageSpeed < 60) return 1.1; // Medium speed, slight increase
-    if (averageSpeed < 80) return 1.2; // High speed, moderate increase
-    return 1.3; // Very high speed, significant increase
+    // Sesuaikan kekasaran berdasarkan kecepatan (kecepatan tinggi memperkuat persepsi kekasaran jalan)
+    if (averageSpeed < 20) return 0.8; // Kecepatan rendah, kurangi sensitivitas
+    if (averageSpeed < 40) return 1; // Kecepatan normal
+    if (averageSpeed < 60) return 1.1; // Kecepatan sedang, sedikit peningkatan
+    if (averageSpeed < 80) return 1.2; // Kecepatan tinggi, peningkatan moderat
+    return 1.3; // Kecepatan sangat tinggi, peningkatan signifikan
   }
 }
 
@@ -368,7 +368,7 @@ class _SensingPageState extends State<SensingPage> {
   bool _isMonitoring = false;
   RoadSegment? _latestSegment;
   final List<RoadSegment> _roadSegments = [];
-  String _statusMessage = 'TAP TO START';
+  String _statusMessage = 'KETUK UNTUK MULAI';
 
   @override
   void initState() {
@@ -405,17 +405,17 @@ class _SensingPageState extends State<SensingPage> {
   }
 
   Color _getRoughnessColor(double roughness, AppColors colors) {
-    if (roughness < 20) return colors.support[500]!; // Green - Smooth
-    if (roughness < 40) return colors.secondary[500]!; // Orange - Fair
-    if (roughness < 60) return colors.secondary[700]!; // Dark Orange - Rough
-    return const Color(0xFFFF3B30); // Red - Very Rough
+    if (roughness < 20) return colors.support[500]!; // Hijau - Halus
+    if (roughness < 40) return colors.secondary[500]!; // Oranye - Sedang
+    if (roughness < 60) return colors.secondary[700]!; // Oranye Gelap - Kasar
+    return const Color(0xFFFF3B30); // Merah - Sangat Kasar
   }
 
   String _getRoughnessLabel(double roughness) {
-    if (roughness < 20) return 'SMOOTH';
-    if (roughness < 40) return 'FAIR';
-    if (roughness < 60) return 'ROUGH';
-    return 'VERY ROUGH';
+    if (roughness < 20) return 'HALUS';
+    if (roughness < 40) return 'SEDANG';
+    if (roughness < 60) return 'KASAR';
+    return 'SANGAT KASAR';
   }
 
   @override
@@ -482,7 +482,7 @@ class _SensingPageState extends State<SensingPage> {
                           ),
                         ],
                       ),
-      
+
                       // Status indicator
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -516,7 +516,7 @@ class _SensingPageState extends State<SensingPage> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _isMonitoring ? 'MONITORING' : 'READY',
+                              _isMonitoring ? 'MEMANTAU' : 'SIAP',
                               style: TextStyle(
                                 color: _isMonitoring
                                     ? colors.support[500]!
@@ -532,7 +532,7 @@ class _SensingPageState extends State<SensingPage> {
                     ],
                   ),
                 ),
-      
+
                 // Main content area
                 Expanded(
                   child: Center(
@@ -545,24 +545,24 @@ class _SensingPageState extends State<SensingPage> {
                             try {
                               if (!_isMonitoring) {
                                 setState(() {
-                                  _statusMessage = 'Starting...';
+                                  _statusMessage = 'Memulai...';
                                 });
                                 await _service.startMonitoring();
                                 setState(() {
                                   _isMonitoring = true;
-                                  _statusMessage = 'MONITORING';
+                                  _statusMessage = 'MEMANTAU';
                                 });
                               } else {
                                 _service.stopMonitoring();
                                 setState(() {
                                   _isMonitoring = false;
-                                  _statusMessage = 'TAP TO START';
+                                  _statusMessage = 'KETUK UNTUK MULAI';
                                 });
                               }
                             } catch (e) {
                               setState(() {
                                 _isMonitoring = false;
-                                _statusMessage = 'ERROR';
+                                _statusMessage = 'KESALAHAN';
                               });
                             }
                           },
@@ -602,23 +602,24 @@ class _SensingPageState extends State<SensingPage> {
                             ),
                           ),
                         ),
-      
+
                         const SizedBox(height: 40),
-      
+
                         // Large numeric display
                         Text(
                           roughnessValue.toStringAsFixed(1),
                           style: TextStyle(
                             color: colors.neutral[50],
-                            fontSize: screenWidth * 0.25, // Responsive font size
+                            fontSize:
+                                screenWidth * 0.25, // Responsive font size
                             fontWeight: FontWeight.w300,
                             height: 1,
                             letterSpacing: -2,
                           ),
                         ),
-      
+
                         const SizedBox(height: 16),
-      
+
                         // Road condition label
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -653,7 +654,7 @@ class _SensingPageState extends State<SensingPage> {
                     ),
                   ),
                 ),
-      
+
                 // Bottom status bar
                 Container(
                   margin: const EdgeInsets.all(24),
@@ -702,7 +703,7 @@ class _SensingPageState extends State<SensingPage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'READINGS',
+                              'PEMBACAAN',
                               style: TextStyle(
                                 color: colors.neutral[400],
                                 fontSize: 10,
