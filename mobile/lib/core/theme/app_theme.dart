@@ -373,10 +373,10 @@ class AppThemeData {
           color: Colors.white,
         ),
         iconTheme: const IconThemeData(
-          color: Colors.white,
+          color: Colors.black,
         ),
         actionsIconTheme: const IconThemeData(
-          color: Colors.white,
+          color: Colors.black,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(

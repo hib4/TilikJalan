@@ -179,7 +179,7 @@ class _MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Current Location',
+                      'Lokasi Saat Ini',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -221,7 +221,7 @@ class _MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                           if (_currentAddress != null) ...[
                             const SizedBox(height: 8),
                             const Text(
-                              'Address:',
+                              'Alamat:',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
