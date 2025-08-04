@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tilikjalan/core/core.dart';
 import 'package:tilikjalan/features/map/map.dart';
 import 'package:tilikjalan/features/notification/notification.dart';
@@ -78,127 +79,133 @@ class _DashboardPageState extends State<DashboardPage> {
       );
     }
 
-    return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(), // Disable swipe
-        children: _pages,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: colors.primary[500],
-        unselectedItemColor: colors.grey[500],
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: [
-          buildItem(
-            icon: Assets.icons.map.svg(
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                colors.grey[500]!,
-                BlendMode.srcIn,
+      child: Scaffold(
+        body: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(), // Disable swipe
+          children: _pages,
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: colors.primary[500],
+          unselectedItemColor: colors.grey[500],
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          items: [
+            buildItem(
+              icon: Assets.icons.map.svg(
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  colors.grey[500]!,
+                  BlendMode.srcIn,
+                ),
               ),
-            ),
-            activeIcon: Assets.icons.mapActive.svg(
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                colors.primary[500]!,
-                BlendMode.srcIn,
+              activeIcon: Assets.icons.mapActive.svg(
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  colors.primary[500]!,
+                  BlendMode.srcIn,
+                ),
               ),
+              label: 'Peta',
+              isActive: _selectedIndex == 0,
             ),
-            label: 'Peta',
-            isActive: _selectedIndex == 0,
-          ),
-          buildItem(
-            icon: Assets.icons.report.svg(
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                colors.grey[500]!,
-                BlendMode.srcIn,
+            buildItem(
+              icon: Assets.icons.report.svg(
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  colors.grey[500]!,
+                  BlendMode.srcIn,
+                ),
               ),
-            ),
-            activeIcon: Assets.icons.reportActive.svg(
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                colors.primary[500]!,
-                BlendMode.srcIn,
+              activeIcon: Assets.icons.reportActive.svg(
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  colors.primary[500]!,
+                  BlendMode.srcIn,
+                ),
               ),
+              label: 'Lapor',
+              isActive: _selectedIndex == 1,
             ),
-            label: 'Lapor',
-            isActive: _selectedIndex == 1,
-          ),
-          const BottomNavigationBarItem(
-            icon: SizedBox.shrink(),
-            label: 'Sensing',
-          ),
-          buildItem(
-            icon: Assets.icons.notification.svg(
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                colors.grey[500]!,
-                BlendMode.srcIn,
-              ),
-            ),
-            activeIcon: Assets.icons.notificationActive.svg(
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                colors.primary[500]!,
-                BlendMode.srcIn,
-              ),
-            ),
-            label: 'Notifikasi',
-            isActive: _selectedIndex == 3,
-          ),
-          buildItem(
-            icon: Assets.icons.profile.svg(
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                colors.grey[500]!,
-                BlendMode.srcIn,
-              ),
-            ),
-            activeIcon: Assets.icons.profileActive.svg(
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                colors.primary[500]!,
-                BlendMode.srcIn,
-              ),
-            ),
-            label: 'Profil',
-            isActive: _selectedIndex == 4,
-          ),
-        ],
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: SizedBox(
-          width: 60,
-          height: 60,
-          child: FloatingActionButton(
-            onPressed: () {
-              context.push(const SensingPage());
-            },
-            elevation: 0,
-            shape: const CircleBorder(),
-            backgroundColor: colors.primary[500],
-            child: Semantics(
+            const BottomNavigationBarItem(
+              icon: SizedBox.shrink(),
               label: 'Sensing',
-              child: Assets.icons.sensing.svg(),
+            ),
+            buildItem(
+              icon: Assets.icons.notification.svg(
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  colors.grey[500]!,
+                  BlendMode.srcIn,
+                ),
+              ),
+              activeIcon: Assets.icons.notificationActive.svg(
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  colors.primary[500]!,
+                  BlendMode.srcIn,
+                ),
+              ),
+              label: 'Notifikasi',
+              isActive: _selectedIndex == 3,
+            ),
+            buildItem(
+              icon: Assets.icons.profile.svg(
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  colors.grey[500]!,
+                  BlendMode.srcIn,
+                ),
+              ),
+              activeIcon: Assets.icons.profileActive.svg(
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  colors.primary[500]!,
+                  BlendMode.srcIn,
+                ),
+              ),
+              label: 'Profil',
+              isActive: _selectedIndex == 4,
+            ),
+          ],
+        ),
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: SizedBox(
+            width: 60,
+            height: 60,
+            child: FloatingActionButton(
+              onPressed: () {
+                context.push(const SensingPage());
+              },
+              elevation: 0,
+              shape: const CircleBorder(),
+              backgroundColor: colors.primary[500],
+              child: Semantics(
+                label: 'Sensing',
+                child: Assets.icons.sensing.svg(),
+              ),
             ),
           ),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }

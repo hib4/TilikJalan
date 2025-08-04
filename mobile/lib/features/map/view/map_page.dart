@@ -210,24 +210,8 @@ class _MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Latitude: ${_currentPosition!.latitude.toStringAsFixed(6)}',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          Text(
-                            'Longitude: ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                            style: const TextStyle(fontSize: 14),
-                          ),
                           if (_currentAddress != null) ...[
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Alamat:',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
+                          
                             Text(
                               _currentAddress!,
                               style: const TextStyle(fontSize: 13),
