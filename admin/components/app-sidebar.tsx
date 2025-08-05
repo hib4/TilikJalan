@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, ClipboardList, LayoutDashboard } from "lucide-react";
+import { BarChart3, ClipboardList, FileText, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -23,7 +23,12 @@ const menuItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Manajemen",
+    title: "Laporan",
+    url: "/reports",
+    icon: FileText,
+  },
+  {
+    title: "Manajemen Tugas",
     url: "/tasks",
     icon: ClipboardList,
   },
@@ -56,7 +61,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigasi</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (

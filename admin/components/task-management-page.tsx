@@ -4,17 +4,62 @@ import { useState, useCallback } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { TouchBackend } from "react-dnd-touch-backend";
-import { GripVertical, CheckCircle2 } from "lucide-react";
+import { GripVertical, CheckCircle2, Plus, Edit, Trash2, Save, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { DraggableTask } from "@/components/draggable-task";
 import { DroppableColumn } from "@/components/droppable-column";
+import { TaskForm } from "@/components/task-form";
 
 const isTouchDevice = () => {
   if (typeof window === "undefined") return false;
   return "ontouchstart" in window || navigator.maxTouchPoints > 0;
 };
+
+// Task interface
+interface Task {
+  id: string;
+  streetName: string;
+  priorityScore: number;
+  team: string[];
+  isHighPriority: boolean;
+  status: string;
+  assignedDate: string;
+  estimatedDuration: string;
+  description: string;
+  location: string;
+}
+
+// Form data interface
+interface TaskFormData {
+  streetName: string;
+  priorityScore: string;
+  team: string;
+  isHighPriority: boolean;
+  estimatedDuration: string;
+  description: string;
+  location: string;
+}
+
+// Team members for selection
+const availableTeamMembers = [
+  "JD", "SM", "AB", "CD", "EF", "GH", "IJ", "KL", 
+  "MN", "OP", "QR", "ST", "UV", "WX", "YZ"
+];
+
+// Duration options
+const durationOptions = [
+  "1 hari", "2 hari", "3 hari", "4 hari", "5 hari",
+  "1 minggu", "2 minggu", "1 bulan"
+];
 
 const initialKanbanData = {
   "new-priority": {
@@ -29,6 +74,8 @@ const initialKanbanData = {
         status: "Baru",
         assignedDate: "2024-01-15",
         estimatedDuration: "3 hari",
+        description: "Perbaikan jalan utama dengan prioritas tinggi",
+        location: "Jakarta Pusat"
       },
       {
         id: "task-2",
@@ -39,6 +86,8 @@ const initialKanbanData = {
         status: "Baru",
         assignedDate: "2024-01-14",
         estimatedDuration: "2 hari",
+        description: "Perbaikan lubang kecil di area komersial",
+        location: "Jakarta Selatan"
       },
     ],
   },
@@ -54,6 +103,8 @@ const initialKanbanData = {
         status: "Sedang Berlangsung",
         assignedDate: "2024-01-13",
         estimatedDuration: "4 hari",
+        description: "Survei kondisi jalan boulevard utama",
+        location: "Jakarta Pusat"
       },
       {
         id: "task-4",
@@ -64,6 +115,8 @@ const initialKanbanData = {
         status: "Sedang Berlangsung",
         assignedDate: "2024-01-12",
         estimatedDuration: "2 hari",
+        description: "Pemeliharaan rutin area pusat perbelanjaan",
+        location: "Jakarta Selatan"
       },
     ],
   },
@@ -79,6 +132,8 @@ const initialKanbanData = {
         status: "Dijadwalkan",
         assignedDate: "2024-01-11",
         estimatedDuration: "5 hari",
+        description: "Pemeliharaan terjadwal jalan tol dalam kota",
+        location: "Jakarta Selatan"
       },
     ],
   },
@@ -94,6 +149,8 @@ const initialKanbanData = {
         status: "Selesai",
         assignedDate: "2024-01-08",
         estimatedDuration: "3 hari",
+        description: "Perbaikan selesai dengan kualitas baik",
+        location: "Jakarta Selatan"
       },
       {
         id: "task-7",
@@ -104,6 +161,8 @@ const initialKanbanData = {
         status: "Selesai",
         assignedDate: "2024-01-05",
         estimatedDuration: "2 hari",
+        description: "Pemeliharaan area perkantoran selesai",
+        location: "Jakarta Selatan"
       },
     ],
   },
@@ -113,6 +172,20 @@ export function TaskManagementPage() {
   const [kanbanData, setKanbanData] = useState(initialKanbanData);
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [formData, setFormData] = useState<TaskFormData>({
+    streetName: "",
+    priorityScore: "5.0",
+    team: "",
+    isHighPriority: false,
+    estimatedDuration: "2 hari",
+    description: "",
+    location: ""
+  });
   const { toast } = useToast();
 
   const moveTask = useCallback(
@@ -159,6 +232,162 @@ export function TaskManagementPage() {
     [toast]
   );
 
+  // CRUD Functions
+  const resetForm = () => {
+    setFormData({
+      streetName: "",
+      priorityScore: "5.0",
+      team: "",
+      isHighPriority: false,
+      estimatedDuration: "2 hari",
+      description: "",
+      location: ""
+    });
+  };
+
+  const generateTaskId = () => {
+    const allTasks = Object.values(kanbanData).flatMap(column => column.tasks);
+    const maxId = Math.max(...allTasks.map(task => parseInt(task.id.split('-')[1]) || 0));
+    return `task-${maxId + 1}`;
+  };
+
+  const createTask = useCallback(() => {
+    if (!formData.streetName.trim()) {
+      toast({
+        title: "Error",
+        description: "Nama jalan harus diisi",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newTask: Task = {
+      id: generateTaskId(),
+      streetName: formData.streetName,
+      priorityScore: parseFloat(formData.priorityScore),
+      team: formData.team ? formData.team.split(',').map(t => t.trim()) : [],
+      isHighPriority: formData.isHighPriority,
+      status: "Baru",
+      assignedDate: new Date().toISOString().split('T')[0],
+      estimatedDuration: formData.estimatedDuration,
+      description: formData.description,
+      location: formData.location
+    };
+
+    setKanbanData(prevData => ({
+      ...prevData,
+      "new-priority": {
+        ...prevData["new-priority"],
+        tasks: [...prevData["new-priority"].tasks, newTask]
+      }
+    }));
+
+    toast({
+      title: "Tugas Dibuat",
+      description: `Tugas "${formData.streetName}" berhasil dibuat`,
+    });
+
+    resetForm();
+    setIsCreateDialogOpen(false);
+  }, [formData, toast]);
+
+  const editTask = useCallback((task: Task) => {
+    setEditingTask(task);
+    setFormData({
+      streetName: task.streetName,
+      priorityScore: task.priorityScore.toString(),
+      team: task.team.join(', '),
+      isHighPriority: task.isHighPriority,
+      estimatedDuration: task.estimatedDuration,
+      description: task.description,
+      location: task.location
+    });
+    setIsEditDialogOpen(true);
+  }, []);
+
+  const updateTask = useCallback(() => {
+    if (!editingTask || !formData.streetName.trim()) {
+      toast({
+        title: "Error",
+        description: "Nama jalan harus diisi",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setKanbanData(prevData => {
+      const newData = { ...prevData };
+      
+      // Find the task in any column
+      for (const [columnId, column] of Object.entries(newData)) {
+        const taskIndex = column.tasks.findIndex(t => t.id === editingTask.id);
+        if (taskIndex !== -1) {
+          const updatedTask: Task = {
+            ...editingTask,
+            streetName: formData.streetName,
+            priorityScore: parseFloat(formData.priorityScore),
+            team: formData.team ? formData.team.split(',').map(t => t.trim()) : [],
+            isHighPriority: formData.isHighPriority,
+            estimatedDuration: formData.estimatedDuration,
+            description: formData.description,
+            location: formData.location
+          };
+          
+          newData[columnId as keyof typeof newData].tasks[taskIndex] = updatedTask;
+          break;
+        }
+      }
+      
+      return newData;
+    });
+
+    toast({
+      title: "Tugas Diperbarui",
+      description: `Tugas "${formData.streetName}" berhasil diperbarui`,
+    });
+
+    resetForm();
+    setEditingTask(null);
+    setIsEditDialogOpen(false);
+  }, [editingTask, formData, toast]);
+
+  const deleteTask = useCallback((taskId: string) => {
+    setTaskToDelete(taskId);
+    setIsDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDeleteTask = useCallback(() => {
+    if (!taskToDelete) return;
+
+    setKanbanData(prevData => {
+      const newData = { ...prevData };
+      
+      // Find and remove the task from any column
+      for (const [columnId, column] of Object.entries(newData)) {
+        const taskIndex = column.tasks.findIndex(t => t.id === taskToDelete);
+        if (taskIndex !== -1) {
+          const deletedTask = column.tasks[taskIndex];
+          newData[columnId as keyof typeof newData].tasks.splice(taskIndex, 1);
+          
+          toast({
+            title: "Tugas Dihapus",
+            description: `Tugas "${deletedTask.streetName}" berhasil dihapus`,
+          });
+          break;
+        }
+      }
+      
+      return newData;
+    });
+
+    setTaskToDelete(null);
+    setIsDeleteDialogOpen(false);
+  }, [taskToDelete, toast]);
+
+  const handleFormDataChange = useCallback((newFormData: TaskFormData) => {
+    setFormData(newFormData);
+  }, []);
+
   const handleDragStart = useCallback((taskId: string) => {
     setDraggedTask(taskId);
   }, []);
@@ -175,7 +404,7 @@ export function TaskManagementPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Manajemen
+              Manajemen Tugas
             </h1>
             <p className="text-muted-foreground">
               Kelola tugas perbaikan jalan melalui alur perbaikan
@@ -188,6 +417,17 @@ export function TaskManagementPage() {
                 <span>Menyimpan otomatis...</span>
               </div>
             )}
+            
+            {/* Create Task Button */}
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Buat Tugas Baru
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+            
             <Button variant="outline" size="sm">
               <CheckCircle2 className="h-4 w-4 mr-2" />
               Semua Perubahan Tersimpan
@@ -232,6 +472,8 @@ export function TaskManagementPage() {
                     isDragging={draggedTask === task.id}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
+                    onEdit={editTask}
+                    onDelete={deleteTask}
                   />
                 ))}
                 {column.tasks.length === 0 && (
@@ -302,6 +544,93 @@ export function TaskManagementPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Create Task Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Buat Tugas Baru</DialogTitle>
+              <DialogDescription>
+                Tambahkan tugas perbaikan jalan baru ke dalam sistem
+              </DialogDescription>
+            </DialogHeader>
+            
+            <TaskForm
+              formData={formData}
+              onFormDataChange={handleFormDataChange}
+              availableTeamMembers={availableTeamMembers}
+              durationOptions={durationOptions}
+            />
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                <X className="h-4 w-4 mr-2" />
+                Batal
+              </Button>
+              <Button onClick={createTask}>
+                <Save className="h-4 w-4 mr-2" />
+                Buat Tugas
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Task Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Edit Tugas</DialogTitle>
+              <DialogDescription>
+                Perbarui informasi tugas perbaikan jalan
+              </DialogDescription>
+            </DialogHeader>
+            
+            <TaskForm
+              formData={formData}
+              onFormDataChange={handleFormDataChange}
+              availableTeamMembers={availableTeamMembers}
+              durationOptions={durationOptions}
+            />
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setIsEditDialogOpen(false);
+                setEditingTask(null);
+                resetForm();
+              }}>
+                <X className="h-4 w-4 mr-2" />
+                Batal
+              </Button>
+              <Button onClick={updateTask}>
+                <Save className="h-4 w-4 mr-2" />
+                Simpan Perubahan
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus Tugas</AlertDialogTitle>
+              <AlertDialogDescription>
+                Apakah Anda yakin ingin menghapus tugas ini? Tindakan ini tidak dapat dibatalkan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setTaskToDelete(null);
+                setIsDeleteDialogOpen(false);
+              }}>
+                Batal
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteTask} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Hapus
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DndProvider>
   );

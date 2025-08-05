@@ -286,10 +286,11 @@ export function InteractiveMap() {
 
           {/* Tooltip Hover */}
           {hoveredSegment && (
-            <div className="absolute top-2 right-2 z-[1000] bg-white p-3 rounded-lg shadow-lg border max-w-xs pointer-events-none">
-              <div className="space-y-2">
+            <div className="pointer-events-none absolute right-2 top-2 z-[1000] max-w-xs overflow-hidden rounded-lg border bg-white/95 shadow-lg backdrop-blur-sm">
+              {/* Header */}
+              <div className="border-b bg-white/50 px-3 py-2">
                 <div className="flex items-center justify-between gap-2">
-                  <h4 className="font-semibold text-sm truncate">
+                  <h4 className="truncate text-sm font-semibold text-foreground">
                     {hoveredSegment.pointName || hoveredSegment.name}
                   </h4>
                   <Badge
@@ -309,27 +310,88 @@ export function InteractiveMap() {
                     }
                   </Badge>
                 </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>
-                    <strong>Skor:</strong> {hoveredSegment.priorityScore}
-                  </p>
-                  <p>
-                    <strong>Status:</strong> {hoveredSegment.status}
-                  </p>
+              </div>
+
+              {/* Content */}
+              <div className="p-3">
+                <div className="space-y-3">
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">Skor</p>
+                      <p className="text-sm font-bold text-primary">
+                        {hoveredSegment.priorityScore}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">
+                        Status
+                      </p>
+                      <p className="text-xs font-medium text-foreground">
+                        {hoveredSegment.status}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Coordinates */}
                   {hoveredSegment.coordinatePosition && (
-                    <p>
-                      <strong>Koordinat:</strong>{" "}
-                      {hoveredSegment.coordinatePosition[0].toFixed(4)},{" "}
-                      {hoveredSegment.coordinatePosition[1].toFixed(4)}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Koordinat
+                      </p>
+                      <p className="font-mono text-xs text-foreground">
+                        {hoveredSegment.coordinatePosition[0].toFixed(4)},{" "}
+                        {hoveredSegment.coordinatePosition[1].toFixed(4)}
+                      </p>
+                    </div>
                   )}
-                  <p>
-                    <strong>Panjang:</strong> {hoveredSegment.length}
-                  </p>
-                  <p>
-                    <strong>Jenis Kerusakan:</strong>{" "}
-                    {hoveredSegment.damageType}
-                  </p>
+
+                  {/* Additional Info */}
+                  <div className="grid gap-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Panjang:</span>
+                      <span className="font-medium">
+                        {hoveredSegment.length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Kerusakan:</span>
+                      <span className="font-medium text-right">
+                        {hoveredSegment.damageType}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Preview Image */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1">
+                      <div className="h-1 w-1 rounded-full bg-primary" />
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Preview
+                      </p>
+                    </div>
+                    <div className="aspect-video overflow-hidden rounded border bg-muted">
+                      <img
+                        src={`/Damaged road.jpeg`}
+                        alt={`Preview for ${hoveredSegment.name}`}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = `data:image/svg+xml;base64,${btoa(`
+                            <svg width="200" height="120" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120">
+                              <rect width="200" height="120" fill="#f3f4f6"/>
+                              <g transform="translate(100, 60)">
+                                <circle r="16" fill="#e5e7eb"/>
+                                <path d="M -6 -6 L 6 6 M 6 -6 L -6 6" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/>
+                              </g>
+                              <text x="100" y="85" text-anchor="middle" font-family="ui-sans-serif" font-size="10" fill="#6b7280">
+                                Preview
+                              </text>
+                            </svg>
+                          `)}`;
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -339,135 +401,257 @@ export function InteractiveMap() {
         {/* Daftar Titik Koordinat */}
         <div className="space-y-3">
           {roadSegments.map((segment) => (
-            <div key={segment.id} className="p-3 rounded-lg border bg-card">
-              <div className="flex items-center justify-between mb-2">
-                <h5 className="font-medium text-sm">{segment.name}</h5>
-                <div
-                  className="h-3 w-3 rounded-full border border-white shadow-sm shrink-0"
-                  style={{
-                    backgroundColor:
-                      priorityColors[
-                        segment.priority as keyof typeof priorityColors
-                      ],
-                  }}
-                />
-              </div>
-              <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
-                {segment.coordinates.map((coordinate, index) => {
-                  const coordinateData = {
-                    ...segment,
-                    coordinateIndex: index,
-                    coordinatePosition: coordinate,
-                    pointId: `${segment.id}-${index}`,
-                    pointName: `${segment.name} - Titik ${index + 1}`,
-                  };
-                  return (
-                    <div
-                      key={`${segment.id}-${index}`}
-                      className={`p-2 rounded-md border cursor-pointer transition-all hover:shadow-sm hover:border-primary/50 text-xs ${
-                        selectedSegment?.pointId === coordinateData.pointId
-                          ? "ring-1 ring-primary bg-primary/5"
-                          : "bg-background"
-                      }`}
-                      onClick={() => handleFocusSegment(coordinateData)}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium">Titik {index + 1}</span>
-                        <div
-                          className="h-2 w-2 rounded-full shrink-0"
-                          style={{
-                            backgroundColor:
-                              priorityColors[
-                                segment.priority as keyof typeof priorityColors
-                              ],
-                          }}
-                        />
+            <div key={segment.id} className="space-y-3">
+              <div className="p-3 rounded-lg border bg-card">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="font-medium text-sm">{segment.name}</h5>
+                  <div
+                    className="h-3 w-3 rounded-full border border-white shadow-sm shrink-0"
+                    style={{
+                      backgroundColor:
+                        priorityColors[
+                          segment.priority as keyof typeof priorityColors
+                        ],
+                    }}
+                  />
+                </div>
+                <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {segment.coordinates.map((coordinate, index) => {
+                    const coordinateData = {
+                      ...segment,
+                      coordinateIndex: index,
+                      coordinatePosition: coordinate,
+                      pointId: `${segment.id}-${index}`,
+                      pointName: `${segment.name} - Titik ${index + 1}`,
+                    };
+                    return (
+                      <div
+                        key={`${segment.id}-${index}`}
+                        className={`p-2 rounded-md border cursor-pointer transition-all hover:shadow-sm hover:border-primary/50 text-xs ${
+                          selectedSegment?.pointId === coordinateData.pointId
+                            ? "ring-1 ring-primary bg-primary/5"
+                            : "bg-background"
+                        }`}
+                        onClick={() => handleFocusSegment(coordinateData)}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium">Titik {index + 1}</span>
+                          <div
+                            className="h-2 w-2 rounded-full shrink-0"
+                            style={{
+                              backgroundColor:
+                                priorityColors[
+                                  segment.priority as keyof typeof priorityColors
+                                ],
+                            }}
+                          />
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          <p>
+                            {coordinate[0].toFixed(4)},{" "}
+                            {coordinate[1].toFixed(4)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        <p>
-                          {coordinate[0].toFixed(4)}, {coordinate[1].toFixed(4)}
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Detail Titik Terpilih - Show below the segment that contains the selected point */}
+              {selectedSegment && selectedSegment.id === segment.id && (
+                <div className="overflow-hidden rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 shadow-sm">
+                  {/* Header Section */}
+                  <div className="border-b border-primary/10 bg-white/50 px-6 py-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="space-y-1">
+                        <h4 className="text-xl font-semibold tracking-tight text-foreground">
+                          {selectedSegment.pointName || selectedSegment.name}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Detail informasi lokasi dan kondisi jalan
                         </p>
                       </div>
+                      <Badge
+                        variant="outline"
+                        className="w-fit text-xs font-medium border-2"
+                        style={{
+                          backgroundColor:
+                            priorityColors[
+                              selectedSegment.priority as keyof typeof priorityColors
+                            ],
+                          borderColor:
+                            priorityColors[
+                              selectedSegment.priority as keyof typeof priorityColors
+                            ],
+                          color: "white",
+                        }}
+                      >
+                        {
+                          priorityLabels[
+                            selectedSegment.priority as keyof typeof priorityLabels
+                          ]
+                        }
+                      </Badge>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+
+                  {/* Content Section */}
+                  <div className="p-6">
+                    <div className="grid gap-6 lg:grid-cols-3">
+                      {/* Information Grid */}
+                      <div className="lg:col-span-2">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {/* Priority Score */}
+                          <div className="rounded-lg border bg-card p-4 shadow-sm">
+                            <div className="flex items-center gap-3">
+                              <div className="rounded-full bg-black/10 p-2">
+                                <div
+                                  className="h-3 w-3 rounded-full"
+                                  style={{
+                                    backgroundColor:
+                                      priorityColors[
+                                        selectedSegment.priority as keyof typeof priorityColors
+                                      ],
+                                  }}
+                                />
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                  Skor Prioritas
+                                </p>
+                                <p className="text-2xl font-bold text-foreground">
+                                  {selectedSegment.priorityScore}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Status */}
+                          <div className="rounded-lg border bg-card p-4 shadow-sm">
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                Status Saat Ini
+                              </p>
+                              <p className="text-sm font-semibold text-foreground">
+                                {selectedSegment.status}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Damage Type */}
+                          <div className="rounded-lg border bg-card p-4 shadow-sm">
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                Jenis Kerusakan
+                              </p>
+                              <p className="text-sm font-semibold text-foreground">
+                                {selectedSegment.damageType}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Coordinates */}
+                          {selectedSegment.coordinatePosition && (
+                            <div className="rounded-lg border bg-card p-4 shadow-sm">
+                              <div className="space-y-2">
+                                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                  Koordinat
+                                </p>
+                                <p className="font-mono text-xs text-foreground">
+                                  {selectedSegment.coordinatePosition[0].toFixed(
+                                    6
+                                  )}
+                                  ,{" "}
+                                  {selectedSegment.coordinatePosition[1].toFixed(
+                                    6
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Last Inspection */}
+                          <div className="rounded-lg border bg-card p-4 shadow-sm">
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                Inspeksi Terakhir
+                              </p>
+                              <p className="text-sm font-semibold text-foreground">
+                                {new Date(
+                                  selectedSegment.lastInspection
+                                ).toLocaleDateString("id-ID")}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Segment Length */}
+                          <div className="rounded-lg border bg-card p-4 shadow-sm">
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                Panjang Segmen
+                              </p>
+                              <p className="text-sm font-semibold text-foreground">
+                                {selectedSegment.length}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Report Image */}
+                      <div className="lg:col-span-1">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-1 w-1 rounded-full bg-primary" />
+                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                              Dokumentasi Lapangan
+                            </p>
+                          </div>
+                          <div className="group relative aspect-video overflow-hidden rounded-lg border bg-muted shadow-sm transition-all hover:shadow-md">
+                            <img
+                              src={`/Damaged road.jpeg`}
+                              alt={`Report image for ${
+                                selectedSegment.pointName ||
+                                selectedSegment.name
+                              }`}
+                              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                              onError={(e) => {
+                                e.currentTarget.src = `data:image/svg+xml;base64,${btoa(`
+                                  <svg width="400" height="240" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240">
+                                    <defs>
+                                      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+                                      </pattern>
+                                    </defs>
+                                    <rect width="400" height="240" fill="#f9fafb"/>
+                                    <rect width="400" height="240" fill="url(#grid)"/>
+                                    <g transform="translate(200, 120)">
+                                      <circle r="24" fill="#e5e7eb"/>
+                                      <path d="M -8 -8 L 8 8 M 8 -8 L -8 8" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"/>
+                                    </g>
+                                    <text x="200" y="160" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="14" font-weight="500" fill="#6b7280">
+                                      Gambar Tidak Tersedia
+                                    </text>
+                                  </svg>
+                                `)}`;
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Klik gambar untuk melihat detail dokumentasi
+                            lapangan
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
-
-        {/* Detail Titik Terpilih */}
-        {selectedSegment && (
-          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-semibold text-lg">
-                {selectedSegment.pointName || selectedSegment.name}
-              </h4>
-              <Badge
-                variant={
-                  selectedSegment.priority === "high"
-                    ? "destructive"
-                    : selectedSegment.priority === "medium"
-                    ? "default"
-                    : "secondary"
-                }
-              >
-                {
-                  priorityLabels[
-                    selectedSegment.priority as keyof typeof priorityLabels
-                  ]
-                }
-              </Badge>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 text-sm">
-              <div>
-                <p className="font-medium text-muted-foreground">
-                  Skor Prioritas
-                </p>
-                <p className="text-lg font-semibold">
-                  {selectedSegment.priorityScore}
-                </p>
-              </div>
-              <div>
-                <p className="font-medium text-muted-foreground">
-                  Status Saat Ini
-                </p>
-                <p>{selectedSegment.status}</p>
-              </div>
-              {selectedSegment.coordinatePosition && (
-                <div>
-                  <p className="font-medium text-muted-foreground">Koordinat</p>
-                  <p className="font-mono text-xs">
-                    {selectedSegment.coordinatePosition[0].toFixed(6)},{" "}
-                    {selectedSegment.coordinatePosition[1].toFixed(6)}
-                  </p>
-                </div>
-              )}
-              <div>
-                <p className="font-medium text-muted-foreground">
-                  Jenis Kerusakan
-                </p>
-                <p>{selectedSegment.damageType}</p>
-              </div>
-              <div>
-                <p className="font-medium text-muted-foreground">
-                  Inspeksi Terakhir
-                </p>
-                <p>
-                  {new Date(selectedSegment.lastInspection).toLocaleDateString(
-                    "id-ID"
-                  )}
-                </p>
-              </div>
-              <div>
-                <p className="font-medium text-muted-foreground">
-                  Panjang Segmen
-                </p>
-                <p>{selectedSegment.length}</p>
-              </div>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

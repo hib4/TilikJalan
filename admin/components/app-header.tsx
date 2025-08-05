@@ -21,7 +21,7 @@ export function AppHeader() {
       <div className="flex flex-1 items-center gap-2">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search roads, reports, tasks..." className="pl-8" />
+          <Input placeholder="Cari jalan, laporan, tugas..." className="pl-8" />
         </div>
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
