@@ -1,15 +1,13 @@
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from PIL import Image
 import io
 import uuid
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
-
-# --- The Refactored Service Class ---
-
+import base64
 
 class FirebaseService:
     """A service class to handle all Firebase interactions."""
@@ -19,6 +17,7 @@ class FirebaseService:
         Initializes the Firebase app and service clients (Firestore, Storage).
         """
         if not firebase_admin._apps:
+            load_dotenv() # Load env variables here for clean initialization
             cred_path = os.getenv("FIREBASE_CREDENTIAL_KEY")
             bucket_path = os.getenv("FIREBASE_BUCKET_PATH")
             if not cred_path or not bucket_path:
@@ -34,116 +33,110 @@ class FirebaseService:
         self.bucket = storage.bucket()
 
     def _upload_image_and_get_url(
-        self, image: Image.Image, prefix: str
+        self, image: str, prefix: str
     ) -> Optional[str]:
         """
-        Uploads a single image and returns a long-lived signed URL.
+        (Private) Uploads a single image and returns a long-lived signed URL.
         """
         try:
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format="JPEG")
-            img_byte_arr = img_byte_arr.getvalue()
+            img_bytes = base64.b64decode(image)
 
             filename = f"{prefix}/{uuid.uuid4()}.jpg"
             blob = self.bucket.blob(filename)
-            blob.upload_from_string(img_byte_arr, content_type="image/jpeg")
+            blob.upload_from_string(img_bytes, content_type="image/jpeg")
 
-            # --- SECURITY: Use signed URLs instead of making blobs public ---
-            # Generate a URL that expires in 10 years for long-term access.
             expiration = timedelta(days=365 * 10)
             return blob.generate_signed_url(expiration=expiration)
         except Exception as e:
             print(f"Error uploading image to '{prefix}': {e}")
             return None
 
-    def _prepare_defect_document(
-        self, original_url: str, annotated_url: str, meta: Dict
+    def _prepare_document(
+        self, original_urls: List[str], annotated_urls: List[str], meta: Dict
     ) -> Dict:
         """
-        Prepares a dictionary with all required fields for a Firestore document.
+        (Private) Prepares a dictionary for a Firestore document.
         """
-        # Make a copy to avoid modifying the original metadata dict
         document_data = meta.copy()
-
         document_data["images"] = {
-            "original_url": original_url,
-            "annotated_url": annotated_url,
+            "original_urls": original_urls,
+            "annotated_urls": annotated_urls,
         }
         document_data["upload_timestamp"] = datetime.now()
         document_data["id"] = str(uuid.uuid4())
         return document_data
 
-    def upload_batch_defects(
+    def upload_sensor_report(
         self,
-        original_images: List[Image.Image],
-        annotated_images: List[Image.Image],
-        metadata_list: List[Dict],
-    ) -> List[Dict]:
+        original_images: List[str],
+        annotated_images: List[str],
+        metadata: Dict,
+    ) -> Optional[str]:
         """
-        Processes a batch of defects, uploads images, and saves records to Firestore.
-        Uses a Firestore batch for atomic writes.
+        Processes a sensor-triggered defect, uploading all associated images
+        and creating a single Firestore document.
         """
-        batch = self.db.batch()
-        defects_collection = self.db.collection("road_defects")
-        uploaded_records = []
+        original_urls = []
+        annotated_urls = []
+        for original, annotated in zip(original_images, annotated_images):
+            org_url = self._upload_image_and_get_url(original, "original_sensor")
+            ann_url = self._upload_image_and_get_url(annotated, "annotated_sensor")
+            if org_url and ann_url:
+                original_urls.append(org_url)
+                annotated_urls.append(ann_url)
 
-        for original, annotated, meta in zip(
-            original_images, annotated_images, metadata_list
-        ):
-            original_url = self._upload_image_and_get_url(original, "original")
-            annotated_url = self._upload_image_and_get_url(annotated, "annotated")
+        # Only proceed if we have successfully uploaded images
+        if not original_urls:
+            print("Failed to upload any images for the sensor report.")
+            return None
 
-            if original_url and annotated_url:
-                doc_data = self._prepare_defect_document(
-                    original_url, annotated_url, meta
-                )
-                doc_ref = defects_collection.document(doc_data["id"])
-                batch.set(doc_ref, doc_data)
-                uploaded_records.append(doc_data)
-                print(f"Prepared defect for batch: {doc_data['id']}")
-
+        doc_data = self._prepare_document(original_urls, annotated_urls, metadata)
+        
         try:
-            batch.commit()
-            print(f"Successfully committed batch of {len(uploaded_records)} records.")
-            return uploaded_records
+            doc_ref = self.db.collection("road_defects").document(doc_data["id"])
+            doc_ref.set(doc_data)
+            print(f"Successfully uploaded sensor report: {doc_data['id']}")
+            return doc_data['id']
         except Exception as e:
-            print(f"Error committing batch to Firestore: {e}")
-            return []
+            print(f"Error committing sensor report to Firestore: {e}")
+            return None
 
-    def upload_single_report(
+
+    def upload_manual_report(
         self, original_image: Image.Image, annotated_image: Image.Image, metadata: Dict
     ) -> Optional[Dict]:
         """
-        Processes a single user report, uploads images, and saves the record to Firestore.
+        Processes a single user-submitted manual report.
         """
-        reports_collection = self.db.collection("defect_reports")
+        reports_collection = self.db.collection("manual_reports")
 
-        original_url = self._upload_image_and_get_url(original_image, "original_report")
+        original_url = self._upload_image_and_get_url(original_image, "original_manual")
         annotated_url = self._upload_image_and_get_url(
-            annotated_image, "annotated_report"
+            annotated_image, "annotated_manual"
         )
 
         if original_url and annotated_url:
-            doc_data = self._prepare_defect_document(
-                original_url, annotated_url, metadata
+            # **FIX:** Wrap the single URLs in lists to match the expected structure.
+            doc_data = self._prepare_document(
+                [original_url], [annotated_url], metadata
             )
             try:
                 reports_collection.document(doc_data["id"]).set(doc_data)
-                print(f"Successfully uploaded report: {doc_data['id']}")
+                print(f"Successfully uploaded manual report: {doc_data['id']}")
                 return doc_data
             except Exception as e:
-                print(f"Error uploading single report to Firestore: {e}")
+                print(f"Error uploading manual report to Firestore: {e}")
 
         return None
 
-    def fetch_all_defects(self) -> List[Dict]:
+    def fetch_all_defects(self, collection_name: str = "road_defects") -> List[Dict]:
         """
-        Retrieves all road defects from Firestore.
+        Retrieves all documents from a specified collection.
         """
         try:
-            defects_ref = self.db.collection("road_defects").stream()
-            defects = []
-            for doc in defects_ref:
+            docs_ref = self.db.collection(collection_name).stream()
+            results = []
+            for doc in docs_ref:
                 data = doc.to_dict()
                 if "upload_timestamp" in data and isinstance(
                     data["upload_timestamp"], datetime
@@ -151,34 +144,44 @@ class FirebaseService:
                     data["upload_timestamp"] = data["upload_timestamp"].strftime(
                         "%Y-%m-%d %H:%M:%S"
                     )
-                defects.append(data)
-            return defects
+                results.append(data)
+            return results
         except Exception as e:
-            print(f"Error retrieving defects: {str(e)}")
+            print(f"Error retrieving from '{collection_name}': {str(e)}")
             return []
 
 
-# # --- Example Usage ---
+# # # --- Example Usage ---
 # if __name__ == "__main__":
-#     load_dotenv()
-
 #     # 1. Create a service instance (this handles initialization)
 #     firebase_service = FirebaseService()
 
-#     # 2. Create some dummy data for a single report
-#     dummy_image = Image.new("RGB", (100, 100), color="red")
-#     dummy_metadata = {"lat": -6.9826, "lon": 110.4092, "street_name": "Jl. Pahlawan"}
-
-#     # 3. Use the service to upload a single report
-#     print("\n--- Testing Single Report Upload ---")
-#     result = firebase_service.upload_single_report(
-#         original_image=dummy_image, annotated_image=dummy_image, metadata=dummy_metadata
+#     # 2. Create dummy data for a manual report
+#     print("\n--- Testing Manual Report Upload ---")
+#     dummy_image = Image.new("RGB", (100, 100), color="blue")
+#     manual_meta = {"lat": -6.9826, "lon": 110.4092, "street_name": "Jl. Pahlawan", "user_id": "user123"}
+    
+#     result = firebase_service.upload_manual_report(
+#         original_image=dummy_image, annotated_image=dummy_image, metadata=manual_meta
 #     )
 #     if result:
-#         print("Upload successful!")
-#         print(result)
+#         print("Manual upload successful!")
 
-#     # 4. Use the service to fetch all defects
+#     # 3. Create dummy data for a sensor report (with multiple images)
+#     print("\n--- Testing Sensor Report Upload ---")
+#     sensor_images = [Image.new("RGB", (100, 100), color=c) for c in ["red", "green", "yellow"]]
+#     sensor_meta = {"lat": -6.9922, "lon": 110.4237, "street_name": "Simpang Lima"}
+
+#     result = firebase_service.upload_sensor_report(
+#         original_images=sensor_images,
+#         annotated_images=sensor_images,
+#         metadata=sensor_meta
+#     )
+#     if result:
+#         print("Sensor upload successful!")
+
+
+#     # 4. Fetch all defects
 #     print("\n--- Testing Fetching All Defects ---")
-#     all_defects = firebase_service.fetch_all_defects()
-#     print(f"Found {len(all_defects)} defects in the database.")
+#     all_defects = firebase_service.fetch_all_defects(collection_name="road_defects")
+#     print(f"Found {len(all_defects)} sensor defects in the database.")
