@@ -7,6 +7,7 @@ from services.street_view import capture_road_images
 from schema.defect_schema import DefectResponse, AnalyzeRequest, ReportRequest
 from inference_sdk import InferenceHTTPClient
 from dotenv import load_dotenv
+from utils.calculate_defect_score import calculate_score
 import os
 import uvicorn
 import base64
@@ -72,15 +73,26 @@ async def analyze_sensor(request:AnalyzeRequest):
             
             # Aggregate confidence score and classes
             total_conf = 0
+            total_detections = 0
             all_class = []
             for result in inference_results:
                 records = result['details']['predictions']
                 for record in records:
                     total_conf += record['confidence']
+                    total_detections += 1
                     all_class.append(record['class'])
             
-            metadata['avg_confidence'] = total_conf / len(records)
+            metadata['avg_confidence'] = total_conf / total_detections
             metadata['detected_classes'] = set(all_class)
+            
+            # Calculate defect score
+            score = calculate_score(
+                avg_conf=metadata['avg_confidence'],
+                num_detections=total_detections,
+                taken_date=metadata['taken_date'],
+                base_multiplier=30
+            )
+            metadata['defect_score'] = score
             
             print('Uploading report to Firestore...')
             report_id = firebase.upload_sensor_report(
@@ -89,12 +101,13 @@ async def analyze_sensor(request:AnalyzeRequest):
                 metadata
             )
             
-            print(f'Report successfully uploaded as {report_id}')
-            return DefectResponse(id=report_id)
+            return DefectResponse(id=report_id, defect_score=score, message=f'Report successfully uploaded as {report_id}')
         except Exception as e:
             print(f'An exception occurred when saving to Firebase: {e}')
     else:
         print(f"Road damage for coordinate {request.lat}, {request.lng} can't be found in Street View !")
+        print(f'Reducing defect score...')
+        # TODO: reduce defect score for the aggregated record
         return None
 
 @app.post("/api/v1/ai/analyze-manual-report", response_model=Optional[DefectResponse])
