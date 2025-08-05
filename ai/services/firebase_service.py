@@ -123,7 +123,7 @@ class FirebaseService:
             try:
                 reports_collection.document(doc_data["id"]).set(doc_data)
                 print(f"Successfully uploaded manual report: {doc_data['id']}")
-                return doc_data
+                return doc_data['id']
             except Exception as e:
                 print(f"Error uploading manual report to Firestore: {e}")
 

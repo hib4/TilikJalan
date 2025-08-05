@@ -9,6 +9,7 @@ from inference_sdk import InferenceHTTPClient
 from dotenv import load_dotenv
 import os
 import uvicorn
+import base64
 
 load_dotenv()
 
@@ -37,20 +38,23 @@ client = InferenceHTTPClient(
 )
 
 @app.post("/api/v1/ai/analyze-sensor", response_model=Optional[DefectResponse])
-async def analyze_report(request:AnalyzeRequest):
+async def analyze_sensor(request:AnalyzeRequest):
     # Confirm the occurence of damages in the road
     print('Capturing road images...')
     result = capture_road_images(request.lat, request.lng)
     inference_results = []
     for i, image in enumerate(result['images']):
         print(f'Analyzing image {i}/{len(result['images'])}')
-        inference_result = client.run_workflow(
-            workspace_name="safe-road",
-            workflow_id="tilik-jalan",
-            images={"image":image}
-        )[0]
-        if inference_result['details']['predictions']:
-            inference_results.append(inference_result)
+        try:
+            inference_result = client.run_workflow(
+                workspace_name="safe-road",
+                workflow_id="tilik-jalan",
+                images={"image":image}
+            )[0]
+            if inference_result['details']['predictions']:
+                inference_results.append(inference_result)
+        except:
+            print(f'Exception in detecting road damages: {e}')
     
     # If present then try to save to firebase
     if inference_results:
@@ -92,6 +96,36 @@ async def analyze_report(request:AnalyzeRequest):
     else:
         print(f"Road damage for coordinate {request.lat}, {request.lng} can't be found in Street View !")
         return None
+
+@app.post("/api/v1/ai/analyze-manual-report", response_model=Optional[DefectResponse])
+async def analyze_manual(request:ReportRequest):
+    image = base64.b64decode(request.image)
+    
+    # Check if there's really road damage in the image
+    try:
+        inference_result = client.run_workflow(
+                workspace_name="safe-road",
+                workflow_id="tilik-jalan",
+                images={"image":image}
+            )[0]
+        if not inference_result['details']['predictions']:
+            print('no damages')
+            return DefectResponse(message='No road damages detected in the picture, please take a better picture')
+    except Exception as e:
+        print(f'Exception in detecting road damages: {e}')
+    
+    report_id = firebase.upload_manual_report(
+        original_image=inference_result['original_image'],
+        annotated_image=inference_result['annotated_image'],
+        metadata={
+            'title': request.title,
+            'description': request.description,
+            'lat': request.lat,
+            'lng': request.lng
+        }
+    )
+    
+    return DefectResponse(id=report_id)
 
 @app.get("/")
 async def root():
