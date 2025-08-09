@@ -47,7 +47,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       decoration: InputDecoration(
         hintText: widget.label,
         hintStyle: textTheme.titleSmall.copyWith(
-          color: colors.grey[700],
+          color: colors.grey[200],
         ),
         errorStyle: textTheme.labelSmall.copyWith(color: Colors.red),
         filled: true,
@@ -66,8 +66,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
                   });
                 },
                 icon: _isPasswordVisible
-                    ? Assets.icons.eyeSlash.svg()
-                    : Assets.icons.eye.svg(),
+                    ? Assets.icons.eyeSlash.svg(
+                      color: colors.grey[200],
+                    )
+                    : Assets.icons.eye.svg(
+                      color: colors.grey[200],
+                    ),
               )
             : null,
         suffixIconConstraints: const BoxConstraints(
@@ -81,14 +85,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-            color: colors.grey[100]!,
+            color: colors.neutral[400]!,
             width: 2,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-            color: colors.primary[500]!,
+            color: colors.primary[600]!,
             width: 2,
           ),
         ),

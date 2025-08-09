@@ -9,6 +9,8 @@ import 'package:sensors_plus/sensors_plus.dart';
 import 'package:tilikjalan/core/theme/app_theme.dart';
 import 'package:tilikjalan/utils/utils.dart';
 
+// DEMO MODE: Set _isDemoMode to true for demo video, false for real usage
+
 // Model class for road segment data
 class RoadSegment {
   RoadSegment({
@@ -302,7 +304,7 @@ class RoadRoughnessService {
     final peaks = <int>[];
     const threshold = _accelerometerThreshold;
 
-    for (int i = 1; i < data.length - 1; i++) {
+    for (var i = 1; i < data.length - 1; i++) {
       if (data[i] > threshold &&
           data[i] > data[i - 1] &&
           data[i] > data[i + 1]) {
@@ -319,7 +321,7 @@ class RoadRoughnessService {
 
     // Calculate cumulative absolute differences (similar to IRI calculation)
     double cumulativeDeviation = 0;
-    for (int i = 1; i < accelerations.length; i++) {
+    for (var i = 1; i < accelerations.length; i++) {
       cumulativeDeviation += (accelerations[i] - accelerations[i - 1]).abs();
     }
 
@@ -370,6 +372,43 @@ class _SensingPageState extends State<SensingPage> {
   final List<RoadSegment> _roadSegments = [];
   String _statusMessage = 'KETUK UNTUK MULAI';
 
+  // Demo simulation variables
+  Timer? _demoTimer;
+  final _isDemoMode = false; // Set to true for demo
+  int _demoStep = 0;
+  final List<double> _demoRoughnessValues = [
+    5.2,
+    8.1,
+    12.3,
+    15.7,
+    23.4,
+    18.9,
+    32.1,
+    28.7,
+    45.3,
+    52.8,
+    38.2,
+    41.6,
+    67.4,
+    73.2,
+    58.9,
+    85.3,
+    92.1,
+    78.6,
+    55.4,
+    42.1,
+    38.7,
+    25.9,
+    19.3,
+    14.2,
+    8.8,
+    6.4,
+    4.1,
+    7.2,
+    11.5,
+    16.8,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -401,21 +440,60 @@ class _SensingPageState extends State<SensingPage> {
   @override
   void dispose() {
     _service.stopMonitoring();
+    _demoTimer?.cancel();
     super.dispose();
   }
 
+  void _startDemoSimulation() {
+    _demoTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) {
+      if (_demoStep >= _demoRoughnessValues.length) {
+        _demoStep = 0; // Loop the demo
+      }
+
+      final roughnessValue = _demoRoughnessValues[_demoStep];
+      _demoStep++;
+
+      // Create a simulated road segment
+      final segment = RoadSegment(
+        latitude: -6.2088 + (_demoStep * 0.0001), // Simulate movement
+        longitude: 106.8456 + (_demoStep * 0.0001),
+        roughnessIndex: roughnessValue,
+        timestamp: DateTime.now(),
+        accelerometerReadings: List.generate(
+          30,
+          (index) => roughnessValue / 10 + (index * 0.1),
+        ),
+      );
+
+      setState(() {
+        _latestSegment = segment;
+        _roadSegments.add(segment);
+        if (_roadSegments.length > 100) {
+          _roadSegments.removeAt(0);
+        }
+
+        // Update status message based on road condition
+        final condition = _getRoughnessLabel(roughnessValue);
+        _statusMessage = 'MENDETEKSI - $condition';
+      });
+    });
+  }
+
+  void _stopDemoSimulation() {
+    _demoTimer?.cancel();
+    _demoTimer = null;
+  }
+
   Color _getRoughnessColor(double roughness, AppColors colors) {
-    if (roughness < 20) return colors.support[500]!; // Hijau - Halus
-    if (roughness < 40) return colors.secondary[500]!; // Oranye - Sedang
-    if (roughness < 60) return colors.secondary[700]!; // Oranye Gelap - Kasar
-    return const Color(0xFFFF3B30); // Merah - Sangat Kasar
+    if (roughness < 30) return colors.support[500]!; // Hijau - Halus
+    if (roughness < 65) return colors.secondary[500]!; // Oranye - Sedang
+    return const Color(0xFFFF3B30); // Merah - Kasar
   }
 
   String _getRoughnessLabel(double roughness) {
-    if (roughness < 20) return 'HALUS';
-    if (roughness < 40) return 'SEDANG';
-    if (roughness < 60) return 'KASAR';
-    return 'SANGAT KASAR';
+    if (roughness < 30) return 'HALUS';
+    if (roughness < 65) return 'SEDANG';
+    return 'KASAR';
   }
 
   @override
@@ -547,13 +625,26 @@ class _SensingPageState extends State<SensingPage> {
                                 setState(() {
                                   _statusMessage = 'Memulai...';
                                 });
-                                await _service.startMonitoring();
+
+                                if (_isDemoMode) {
+                                  // Use demo simulation for video
+                                  _startDemoSimulation();
+                                } else {
+                                  // Use real service for actual usage
+                                  await _service.startMonitoring();
+                                }
+
                                 setState(() {
                                   _isMonitoring = true;
                                   _statusMessage = 'MEMANTAU';
                                 });
                               } else {
-                                _service.stopMonitoring();
+                                if (_isDemoMode) {
+                                  _stopDemoSimulation();
+                                } else {
+                                  _service.stopMonitoring();
+                                }
+
                                 setState(() {
                                   _isMonitoring = false;
                                   _statusMessage = 'KETUK UNTUK MULAI';
@@ -574,7 +665,9 @@ class _SensingPageState extends State<SensingPage> {
                               shape: BoxShape.circle,
                               color: _isMonitoring
                                   ? roughnessColor.withOpacity(0.15)
-                                  : colors.primary[500]!.withOpacity(0.15),
+                                  : colors.primary[500]!.withOpacity(
+                                      0.15,
+                                    ),
                               border: Border.all(
                                 color: _isMonitoring
                                     ? roughnessColor
@@ -716,6 +809,31 @@ class _SensingPageState extends State<SensingPage> {
                               '${_roadSegments.length}',
                               style: TextStyle(
                                 color: colors.neutral[100],
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else if (_isMonitoring && _isDemoMode) ...[
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'DEMO MODE',
+                              style: TextStyle(
+                                color: colors.secondary[500],
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'AKTIF',
+                              style: TextStyle(
+                                color: colors.secondary[500],
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
